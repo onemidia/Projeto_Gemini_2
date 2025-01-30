@@ -19,9 +19,6 @@ def allowed_file(filename):
 @routes.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-        arquivo = None
-        filename = None
-
         if 'file' not in request.files:
             flash('Nenhum arquivo enviado', 'error')
             return redirect(request.url)
