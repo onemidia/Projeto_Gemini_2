@@ -1,15 +1,15 @@
 from flask import Flask
 from database import init_db
-from config import DATABASE_URL  # Importe a URL do banco de dados do config.py
+from config import DATABASE_URL
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
-app.config['SECRET_KEY'] = 'chave_secreta'  # Chave secreta para flash messages
+app.config['SECRET_KEY'] = 'chave_secreta'
 
 # Inicializa o banco de dados
 init_db()
 
-# Importa as rotas
+# Importa e registra as rotas
 from routes import routes
 app.register_blueprint(routes)
 

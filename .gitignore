@@ -6,10 +6,10 @@ venv/
 .venv/
 *.log
 *.tmp
-.DS_Store  # Arquivos do macOS
-Thumbs.db   # Arquivos do Windows
-node_modules/ # Para projetos JavaScript
+.DS_Store
+Thumbs.db
+node_modules/
 __pycache__/
-*.swp       # Arquivos de swap do Vim
-.idea/      # Arquivos do IntelliJ IDEA
-.vscode/     # Arquivos do VS Code
+*.swp
+.idea/
+.vscode/

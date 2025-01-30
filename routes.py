@@ -37,7 +37,7 @@ def index():
                 with open(os.path.join(UPLOAD_FOLDER, filename), 'r') as file:
                     reader = csv.reader(file, delimiter=';')
                     produtos = []
-                    db: Session = get_db()
+                    db: Session = next(get_db())  # Obtém a sessão do banco de dados
                     # Limpa a tabela antes de inserir novos dados
                     db.query(Produto).delete()
                     db.commit()
@@ -69,7 +69,7 @@ def index():
 
 @routes.route('/produtos', methods=['GET'])
 def get_produtos():
-    db: Session = get_db()
+    db: Session = next(get_db())  # Obtém a sessão do banco de dados
     produtos = db.query(Produto).all()
     produtos_json = [
         {
