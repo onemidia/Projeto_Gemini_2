@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import scoped_session, sessionmaker, declarative_base
+from sqlalchemy.orm import sessionmaker, declarative_base, Session # Importe Session aqui
 from config import DATABASE_URL
 
 engine = create_engine(DATABASE_URL)
@@ -11,7 +11,7 @@ def init_db():
     Base.metadata.create_all(bind=engine)
 
 def get_db():
-    db = Session(bind=engine)
+    db = Session(bind=engine)  # Crie uma instância de Session aqui
     try:
         yield db
     finally:
