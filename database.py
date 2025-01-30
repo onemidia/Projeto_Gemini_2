@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base, Session # Importe Session aqui
+from sqlalchemy.orm import sessionmaker, declarative_base, Session, scoped_session  # Adicione scoped_session aqui
 from config import DATABASE_URL
 
 engine = create_engine(DATABASE_URL)
