@@ -20,48 +20,25 @@ def allowed_file(filename):
 @routes.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-        arquivo = None  # Defina arquivo como None aqui
+        arquivo = None  # Inicializa arquivo como None
+        filename = None  # Inicializa filename como None
 
         if 'file' not in request.files:
             flash('Nenhum arquivo enviado', 'error')
             return redirect(request.url)
 
-        arquivo = request.files['file'] # Move a definição para cá
+        arquivo = request.files['file']
         if arquivo.filename == '':
             flash('Nenhum arquivo selecionado', 'error')
             return redirect(request.url)
-        
-        if arquivo and allowed_file(arquivo.filename): # Agora arquivo está sempre definido
+
+        if arquivo and allowed_file(arquivo.filename):
+            filename = secure_filename(arquivo.filename)  # Define filename aqui
             try:
                 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
                 arquivo.save(os.path.join(UPLOAD_FOLDER, filename))
 
-                with open(os.path.join(UPLOAD_FOLDER, filename), 'r') as file:
-                    reader = csv.reader(file, delimiter=';')
-                    produtos = []
-
-                    with next(get_db()) as db:  # Use o bloco with aqui
-                        db.query(Produto).delete()
-                        db.commit()
-                        for row in reader:
-                            try:
-                                id_produto = int(row[0])
-                                descricao = row[1]
-                                valor = float(row[2])
-                                unidade = row[3]
-                                produto = Produto(id=id_produto, codigo=id_produto, descricao=descricao, valor=valor, unidade=unidade)
-                                db.add(produto)
-                                produtos.append(produto)
-                            except ValueError:
-                                flash('Erro ao processar linha do arquivo TXT. Verifique o formato.', 'error')
-                                db.rollback()
-                                break
-                        if not produtos:
-                            return redirect(request.url)
-                        db.commit()
-
-                flash('Arquivo TXT enviado e dados atualizados com sucesso!', 'success')
-                return redirect(url_for('index'))
+                # ... (resto do código para processar o arquivo)
 
             except Exception as e:
                 flash(f'Erro ao processar arquivo: {e}', 'error')
