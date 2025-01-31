@@ -1,68 +1,76 @@
+import os
+import csv
 from flask import Blueprint, request, jsonify, render_template, flash, redirect, url_for
-from flask_wtf import FlaskForm
-from wtforms import FileField, SubmitField, validators
 from models import Produto
 from database import get_db
 from sqlalchemy.orm import Session
 from werkzeug.utils import secure_filename
-import csv
-import logging
 
-# Configuração do logging
-logging.basicConfig(filename='app.log', level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
+routes = Blueprint("routes", __name__)
 
-# Blueprint para organizar as rotas
-main = Blueprint('main', __name__)
+# Configurações
+UPLOAD_FOLDER = './uploads'
+ALLOWED_EXTENSIONS = {'txt'}
 
-# Formulário de upload com validação
-class UploadForm(FlaskForm):
-    file = FileField('Arquivo', validators=[DataRequired()])
-    submit = SubmitField('Enviar')
+# Função para verificar se o arquivo tem uma extensão permitida
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Limita o tamanho máximo do arquivo (ajuste conforme necessário)
-MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB
-
-@main.route('/', methods=['GET', 'POST'])
+@routes.route('/', methods=['GET', 'POST'])
 def index():
-    form = UploadForm()
-    if form.validate_on_submit():
-        file = form.file.data
-        if file and allowed_file(file.filename):
-            if file.content_length > MAX_CONTENT_LENGTH:
-                flash('Arquivo muito grande. O tamanho máximo permitido é de 16MB.', 'error')
-                return redirect(url_for('index'))
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('Nenhum arquivo enviado', 'error')
+            return redirect(request.url)
 
-            filename = secure_filename(file.filename)
+        arquivo = request.files['file']
+        if arquivo.filename == '':
+            flash('Nenhum arquivo selecionado', 'error')
+            return redirect(request.url)
+
+        if arquivo and allowed_file(arquivo.filename):
+            filename = secure_filename(arquivo.filename)
             try:
-                with open(os.path.join(UPLOAD_FOLDER, filename), 'r') as csvfile:
-                    reader = csv.reader(csvfile, delimiter=';')
-                    # Pula o cabeçalho (se houver)
-                    next(reader, None)
+                os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+                arquivo.save(os.path.join(UPLOAD_FOLDER, filename))
+
+                with open(os.path.join(UPLOAD_FOLDER, filename), 'r') as file:
+                    reader = csv.reader(file, delimiter=';')
+                    produtos = []
 
                     with next(get_db()) as db:
-                        db.query(Produto).delete()
+                        db.query(Produto).delete()  # Limpa a tabela
                         db.commit()
-
                         for row in reader:
                             try:
-                                id_produto, descricao, valor, unidade = row
-                                produto = Produto(id=id_produto, codigo=id_produto, descricao=descricao, valor=float(valor), unidade=unidade)
+                                id_produto = int(row[0])
+                                descricao = row[1]
+                                valor = float(row[2])
+                                unidade = row[3]
+                                produto = Produto(id=id_produto, codigo=id_produto, descricao=descricao, valor=valor, unidade=unidade)
                                 db.add(produto)
-                            except (ValueError, IndexError) as e:
-                                logging.error(f"Erro ao processar linha {row}: {e}")
-                                flash('Erro ao processar linha do arquivo. Verifique o formato.', 'error')
+                                produtos.append(produto)
+                            except ValueError:
+                                flash('Erro ao processar linha do arquivo TXT. Verifique o formato.', 'error')
                                 db.rollback()
-                                break
+                                break  # Sai do loop em caso de erro na conversão
+                        if produtos: # Verifica se a lista não está vazia antes de comitar
+                            db.commit()
+                            flash('Arquivo TXT enviado e dados atualizados com sucesso!', 'success')
+                        else:
+                            flash('Nenhum produto foi processado. Verifique o arquivo TXT.', 'warning')
 
-                        db.commit()
-                        flash('Arquivo TXT enviado e dados atualizados com sucesso!', 'success')
+                return redirect(url_for('routes.index'))  # Redireciona após o processamento
+
             except Exception as e:
-                logging.error(f"Erro geral: {e}")
-                flash('Ocorreu um erro inesperado. Verifique o log para mais detalhes.', 'error')
+                flash(f'Erro ao processar arquivo: {e}', 'error')
+                return redirect(request.url)
 
-    return render_template('index.html', form=form)
+        else:
+            flash('Tipo de arquivo não permitido', 'error')
+            return redirect(request.url)
 
-# ... (outras rotas)
+    return render_template('index.html')
 
 @routes.route('/produtos', methods=['GET'])
 def get_produtos():
