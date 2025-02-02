@@ -1,23 +1,15 @@
-import os
-from dotenv import load_dotenv
 from flask import Flask
-from database import init_db
-from config import DATABASE_URL
-
-load_dotenv()
-
-SECRET_KEY = os.environ.get("SECRET_KEY")  # Obtém a chave secreta da variável de ambiente
+from config import config
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from tasks import celery
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
-app.config['SECRET_KEY'] = SECRET_KEY
+app.config.from_object(config.Config)
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
-# Inicializa o banco de dados
-init_db()
-
-# Importa e registra as rotas
-from routes import routes
-app.register_blueprint(routes)
+# ... suas rotas e funções aqui
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
